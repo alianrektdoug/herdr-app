@@ -4,40 +4,40 @@
 <!-- spotlight macos -->
 
 ### New
-- **On macOS, your agents now run fully apart from the app.** Close Herdr, quit it, update it: your agents keep running. Agents already running pick this up the next time they start.
-- On macOS, the system may ask once if **herdr-core** can access a folder like Documents. That's Herdr; click Allow.
-- On macOS, Settings > Keyboard chooses what Option does: Alt, typing characters like á and €, or left or right Option as Alt.
-- A machine that was rebuilt or replaced shows "rebuilt · Connect" in the sidebar: one click connects to the new one.
-- Seen and pinned agents are shared between Herdr windows and the phone app.
-- Mods can take the keyboard, so moving focus can land on them. (#283, thanks @Osc100)
-- PiG agents have their own icon. (#299, thanks @balcsida)
-- Add machine takes a port, like `can@server:2222`.
+- **在 macOS 上，代理程式現在完全獨立於 app 之外執行。** 關閉 Herdr、結束它、更新它，代理程式都會繼續執行。已在執行的代理程式會在下次啟動時套用這項改變。
+- 在 macOS 上，系統可能會問一次 **herdr-core** 是否能存取「文件」之類的資料夾。那就是 Herdr，請按允許。
+- 在 macOS 上，設定 > 鍵盤可以決定 Option 鍵的行為：當 Alt、輸入 á 與 € 之類的字元，或只讓左／右 Option 當 Alt。
+- 被重建或更換過的機器會在側邊欄顯示「rebuilt · 連線」，點一下就能連到新的那台。
+- 已讀與釘選的代理程式會在 Herdr 視窗與手機 app 之間同步。
+- 面板可以接收鍵盤輸入，所以移動焦點時會停在它們上面。 (#283, thanks @Osc100)
+- PiG 代理程式有自己的圖示。 (#299, thanks @balcsida)
+- 新增機器可以指定連接埠，例如 `can@server:2222`。
 
 ### Fixed
-- On Linux, color emoji show in color instead of blank (Fedora's emoji font).
-- Emoji like ✍️ and ❤️ take two cells and draw in color. (#287, thanks @occultsound)
-- On macOS, programs in Herdr terminals can ask for the microphone, camera and to control other apps. (#137, thanks @shivanandasai-altir; #252)
-- Agents on another machine find the commands their shell setup puts on PATH. (#262, thanks @tajchert)
-- New spaces open on the machine you're looking at.
-- Horizontal scrolling reaches programs like vim and less.
-- Clicks work in Textual apps.
-- btop's braille graphs draw without gaps.
-- Nerd Font icons use your terminal font.
-- Rounded corners and dashed lines in boxes draw like Ghostty. (#255, thanks @occultsound)
-- Herdr uses less CPU with many busy agents.
-- A big project no longer makes the folder watcher burn a CPU core. (#263, #257)
-- Mod pictures and icons update when their file is saved.
-- Moving focus back into a split returns to the pane you came from. (#304, thanks @sundarshahi)
-- Unnamed tabs show what their agent is doing in the agents list. (#281, thanks @sundarshahi)
-- A new tab with no space open starts a space. (#303, thanks @sundarshahi)
-- Files marks the files inside a new folder, and opens folder symlinks. (#309, thanks @Nagell; #301, thanks @azaeldrm)
-- Lists in mods follow the zoom. (#296, thanks @Calonca)
-- The + menu shows your agents right away. (#251, thanks @shellscape)
-- Grok shows its own icon. (#293, thanks @Zynoo71)
-- A malformed command can't close the tab you're on. (#297, thanks @chanyang721)
-- On Linux, Ctrl+Insert and Shift+Insert copy and paste in new installs; add them to your keys.json to get them on an existing one. (#258, thanks @dr-moreira)
-- In full screen on macOS, the sidebar header lines up. (#261, thanks @runkids)
-- On Windows, file names in Korean, Chinese and other languages show and open in Files. (#236, thanks @loonslo)
+- 在 Linux 上，彩色表情符號會正常顯示顏色而不是空白（Fedora 的表情符號字型）。
+- ✍️ 與 ❤️ 這類表情符號會佔兩格並以彩色繪製。 (#287, thanks @occultsound)
+- 在 macOS 上，Herdr 終端機裡的程式可以請求麥克風、相機權限，以及控制其他 app。 (#137, thanks @shivanandasai-altir; #252)
+- 其他機器上的代理程式找得到該機 shell 設定加進 PATH 的指令。 (#262, thanks @tajchert)
+- 新空間會開在你正在看的那台機器上。
+- 水平捲動可以傳給 vim、less 這類程式。
+- 在 Textual 應用程式裡點擊可以正常運作。
+- btop 的點字圖表繪製時不再有空隙。
+- Nerd Font 圖示會使用你設定的終端機字型。
+- 方框的圓角與虛線繪製方式與 Ghostty 一致。 (#255, thanks @occultsound)
+- 同時有多個忙碌的代理程式時，Herdr 使用的 CPU 較少。
+- 大型專案不會再讓資料夾監看吃掉一整顆 CPU 核心。 (#263, #257)
+- 面板的圖片與圖示會在檔案存檔時更新。
+- 把焦點移回分割區時，會回到你原本所在的窗格。 (#304, thanks @sundarshahi)
+- 未命名的分頁會在代理程式清單顯示它的代理程式正在做什麼。 (#281, thanks @sundarshahi)
+- 在沒有開啟空間時新增分頁，會自動建立一個空間。 (#303, thanks @sundarshahi)
+- 檔案面板會標記新資料夾內的檔案，也能開啟資料夾符號連結。 (#309, thanks @Nagell; #301, thanks @azaeldrm)
+- 面板裡的清單會跟著縮放比例調整。 (#296, thanks @Calonca)
+- ＋ 選單會立即顯示你的代理程式。 (#251, thanks @shellscape)
+- Grok 會顯示自己的圖示。 (#293, thanks @Zynoo71)
+- 格式錯誤的指令不會關掉你目前所在的分頁。 (#297, thanks @chanyang721)
+- 在 Linux 上，全新安裝的 Ctrl+Insert 與 Shift+Insert 可以複製貼上；既有安裝請自行加進 keys.json。 (#258, thanks @dr-moreira)
+- 在 macOS 全螢幕下，側邊欄標題會對齊。 (#261, thanks @runkids)
+- 在 Windows 上，韓文、中文與其他語言的檔名可以在檔案面板正常顯示與開啟。 (#236, thanks @loonslo)
 - On Windows, Esc then Ctrl+C reach the program as two keys. (#162, thanks @JJLiebig)
 - In Git Bash on Windows, the installer points to the PowerShell one. (#238, thanks @sundarshahi)
 
