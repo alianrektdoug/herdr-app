@@ -567,7 +567,7 @@ impl AppWindow {
         w.apply_look(window, cx);
         w.show_layout_notes(window, cx);
         if let (Some(n), false) = (&name, gone.is_empty()) {
-            let note = json!({ "title": format!("{n} needs mods that aren't here"), "body": format!("Showing Herdr instead. Missing: {}. Your {n} layout file is still there.", gone.join(", ")), "level": "info", "timeout": 12000 });
+            let note = json!({ "title": format!("{n} 需要的面板不存在"), "body": format!("改為顯示 Herdr 版面。缺少：{}。你的 {n} 版面檔仍在。", gone.join(", ")), "level": "info", "timeout": 12000 });
             w.open_overlay(mods::new_overlay_id(), json!({ "kind": "toast", "notification": note }), window, cx);
         }
 
@@ -1089,7 +1089,7 @@ impl AppWindow {
     /// What installing layouts kept of the person's own, as toasts.
     fn show_layout_notes(&mut self, window: &mut Window, cx: &mut Context<Self>) {
         for clone in mods::take_sync_notes() {
-            let n = json!({ "title": format!("Your edits are in {clone}"), "body": "Herdr's own layouts and mods can't be changed: clone one to make it yours.", "level": "info", "timeout": 12000 });
+            let n = json!({ "title": format!("你的修改已保存在 {clone}"), "body": "Herdr 內建的版面與面板不能直接修改：複製一份再改成你要的。", "level": "info", "timeout": 12000 });
             self.open_overlay(mods::new_overlay_id(), json!({ "kind": "toast", "notification": n }), window, cx);
         }
     }
@@ -2272,7 +2272,7 @@ impl AppWindow {
             }).await;
             if let Some(body) = failure {
                 let _ = this.update_in(cx, |this, window, cx| {
-                    this.open_overlay(mods::new_overlay_id(), json!({"kind":"toast", "notification":{"title":"Terminal failed to start", "body":body, "level":"error"}}), window, cx);
+                    this.open_overlay(mods::new_overlay_id(), json!({"kind":"toast", "notification":{"title":"終端機啟動失敗", "body":body, "level":"error"}}), window, cx);
                 });
             }
         }).detach();
@@ -2657,7 +2657,7 @@ impl AppWindow {
     fn run(&mut self, name: &str, args: Value, window: &mut Window, cx: &mut Context<Self>) {
         // A click or key has nobody to read the reply: show why it failed.
         if let Some(error) = self.run_as(name, args, true, window, cx).get("error").and_then(Value::as_str) {
-            let spec = json!({"kind":"toast", "notification":{"title":format!("{name} failed"),"body":error,"level":"error"}});
+            let spec = json!({"kind":"toast", "notification":{"title":format!("{name} 失敗"),"body":error,"level":"error"}});
             self.open_overlay(mods::new_overlay_id(), spec, window, cx);
         }
     }
@@ -2780,8 +2780,8 @@ impl AppWindow {
                         return self.fail("space.close ends its terminals: pass confirmed: true");
                     }
                     let panes: usize = p.tabs.iter().map(|c| c.root.panes().len()).sum();
-                    let detail = format!("{} \u{2014} {} tabs, {} terminals", self.model.space_name(p, &home()), p.tabs.len(), panes);
-                    self.confirm("Close space?", &detail, "space.close", json!({ "id": id, "confirmed": true }), window, cx);
+                    let detail = format!("{} \u{2014} {} 個分頁、{} 個終端機", self.model.space_name(p, &home()), p.tabs.len(), panes);
+                    self.confirm("要關閉這個空間嗎？", &detail, "space.close", json!({ "id": id, "confirmed": true }), window, cx);
                     return;
                 }
                 let addrs = self.model.remove_space(&id);
@@ -3995,7 +3995,7 @@ impl AppWindow {
                     .items_center()
                     .justify_center()
                     .text_color(c("dim"))
-                    .child("no agents yet. start claude, codex or pi in a terminal")
+                    .child("尚無代理程式。在終端機裡啟動 claude、codex 或 pi")
                     .into_any_element(),
             },
             Content::Context { .. } => match self.model.active_tab() {
@@ -4009,7 +4009,7 @@ impl AppWindow {
                         .items_center()
                         .justify_center()
                         .text_color(c("dim"))
-                        .child(format!("No space open. Make one{}.", key.unwrap_or_default()))
+                        .child(format!("目前沒有開啟的空間。可以新增一個{}。", key.unwrap_or_default()))
                         .into_any_element()
                 }
             },
@@ -4068,7 +4068,7 @@ impl AppWindow {
                 .text_xs()
                 .text_color(c("blocked"))
                 .overflow_y_scroll()
-                .child(format!("{} did not load:\n\n{}\n\nFix the files; Herdr retries on save.", inst.name, error.as_deref().unwrap_or("?")))
+                .child(format!("{} 載入失敗：\n\n{}\n\n請修正檔案，存檔後 Herdr 會自動重試。", inst.name, error.as_deref().unwrap_or("?")))
                 .into_any_element(),
             None => div().into_any_element(),
         }
@@ -4267,7 +4267,7 @@ impl AppWindow {
                 .border_1().border_color(c("border")).text_size(settings::z(13.0)).text_color(c("foreground"))
                 .id("core-update-error").cursor_pointer()
                 .on_click(cx.listener(|this, _, w, cx| this.run("app.settings", json!({ "section": "updates" }), w, cx)))
-                .child(format!("herdr-core update failed: {error} · Open Updates")).into_any_element());
+                .child(format!("herdr-core 更新失敗：{error} · 開啟更新頁")).into_any_element());
         }
         out.extend(pill);
         out
@@ -4283,7 +4283,7 @@ impl AppWindow {
         let core = crate::update::core();
         let core = core.ready.filter(|_| !core.updating);
         match (crate::update::ready(), core) {
-            (Some(a), Some(c)) => Some(format!("Herdr {a} and herdr-core {c} are ready")),
+            (Some(a), Some(c)) => Some(format!("Herdr {a} 與 herdr-core {c} 已就緒")),
             (Some(a), None) => Some(format!("Herdr {a} is ready")),
             (None, Some(c)) => Some(format!("herdr-core {c} is ready")),
             (None, None) => None,
@@ -4294,7 +4294,7 @@ impl AppWindow {
         let app_version = crate::update::ready();
         let app_ready = app_version.is_some();
         let success = self.update_ready.is_none() && self.update_success;
-        let label = self.update_ready.clone().or_else(|| success.then(|| format!("Updated to {}", env!("CARGO_PKG_VERSION"))))?;
+        let label = self.update_ready.clone().or_else(|| success.then(|| format!("已更新至 {}", env!("CARGO_PKG_VERSION"))))?;
         let dismissal = app_version.map(|v| format!("app:{v}")).unwrap_or_else(|| label.clone());
         if self.update_dismissed.as_ref() == Some(&dismissal) { return None; }
         let pill = div()
@@ -4328,11 +4328,11 @@ impl AppWindow {
                     .text_color(c("accent_foreground"))
                     .font_weight(FontWeight::SEMIBOLD)
                     .hover(|s| s.opacity(0.9))
-                    .child("Restart")
+                    .child("重新啟動")
                     .on_click(cx.listener(|this, _, w, cx| this.run("app.update", json!({}), w, cx))),
             ))
             .child(div().id("update-notes").px(settings::z(6.0)).cursor_pointer().text_color(c("accent"))
-                .child(if app_ready || success { "What changed" } else { "Open Updates" })
+                .child(if app_ready || success { "更新內容" } else { "開啟更新頁" })
                 .on_click(cx.listener(move |this, _, w, cx| {
                     if success { this.update_success = false; }
                     this.run("app.settings", json!({ "section": "updates" }), w, cx);

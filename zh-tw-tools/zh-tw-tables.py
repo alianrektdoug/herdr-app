@@ -58,6 +58,19 @@ MODS["confirm/main.js"] = [
     ('"Are you sure?"', '"確定嗎？"'),
     ('button("no", "Cancel"', 'button("no", "取消"'),
     ('button("yes", "Confirm"', 'button("yes", "確定"'),
+    # 標題與內容是 Rust 傳進來的 props（src/window.rs 的 confirm()），JS 碰不到源頭，
+    # 在這裡轉成中文。detail 的格式是 "{空間名} — {n} tabs, {m} terminals"，
+    # 空間名是使用者取的，只換固定的單位詞。
+    ('import { run, props, closeOverlay, theme } from "herdr";',
+     'import { run, props, closeOverlay, theme } from "herdr";\n'
+     '\n'
+     '// title/detail 由 Rust 送來（src/window.rs 的 confirm()），在這裡譯。\n'
+     'const ZH_TITLE = { "Close space?": "要關閉這個空間嗎？" };\n'
+     'const zhDetail = (s) =>\n'
+     '  String(s ?? "").replace(/(\\d+) tabs?, (\\d+) terminals?/,\n'
+     '    (_m, tabs, terms) => `${tabs} 個分頁、${terms} 個終端機`);'),
+    ('.child(p.title ?? "確定嗎？")', '.child(ZH_TITLE[p.title] ?? p.title ?? "確定嗎？")'),
+    ('.child(p.detail ?? "")', '.child(zhDetail(p.detail))'),
 ]
 
 MODS["files/main.js"] = [
@@ -145,6 +158,37 @@ MODS["new-menu/main.js"] = [
 
 MODS["pane/main.js"] = [
     ('.child("Needs you")', '.child("需要你")'),
+]
+
+MODS["toast/main.js"] = [
+    # 通知的 title/body 由 Rust 送來（src/window.rs 的 open_overlay ... "kind": "toast"），
+    # JS 碰不到源頭，在這裡譯。對不上的原樣顯示。
+    # 注意：更新提示（"Herdr x.y 已就緒 · Restart"）不走這個 mod，是 frame 自己畫的
+    # （window.rs:4248 的註解），這裡攔不到。
+    ('import { props, closeOverlay, run, theme } from "herdr";',
+     'import { props, closeOverlay, run, theme } from "herdr";\n'
+     '\n'
+     '// Rust 送來的通知文字（src/window.rs）。[比對, 轉換] 依序試，第一個命中的為準。\n'
+     'const ZH_NOTE = [\n'
+     '  [/^Your edits are in (.+)$/, (m) => `你的修改已保存在 ${m[1]}`],\n'
+     '  [/^Herdr\'s own layouts and mods can\'t be changed: clone one to make it yours\\.$/,\n'
+     '    () => "Herdr 內建的版面與面板不能直接修改：複製一份再改成你要的。"],\n'
+     '  [/^Terminal failed to start$/, () => "終端機啟動失敗"],\n'
+     '  [/^(.+) needs mods that aren\'t here$/, (m) => `${m[1]} 需要的面板不存在`],\n'
+     '  [/^Showing Herdr instead\\. Missing: (.+?)\\. (.*)$/,\n'
+     '    (m) => `改為顯示 Herdr 版面。缺少：${m[1]}。${m[2]}`],\n'
+     '  [/^(.+) failed$/, (m) => `${m[1]} 失敗`],\n'
+     '];\n'
+     'const zhNote = (s) => {\n'
+     '  const text = String(s ?? "");\n'
+     '  for (const [re, to] of ZH_NOTE) {\n'
+     '    const m = text.match(re);\n'
+     '    if (m) return to(m);\n'
+     '  }\n'
+     '  return text;\n'
+     '};'),
+    ('.child(p.title ?? "")', '.child(zhNote(p.title))'),
+    ('.child(p.body ?? "")', '.child(zhNote(p.body))'),
 ]
 
 MODS["peek/main.js"] = [
