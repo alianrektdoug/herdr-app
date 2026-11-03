@@ -520,7 +520,9 @@ impl TerminalView {
         if self.send_image(cx) {
             return;
         }
-        let text = if cfg!(windows) { cx.read_from_clipboard().and_then(|c| c.text()) } else { None };
+        // Only the text is wanted here, and reading the clipboard pulls in every
+        // format it holds — tens of MB of bitmap right after a screenshot. Ask first.
+        let text = if cfg!(windows) && clipboard_has_text() { cx.read_from_clipboard().and_then(|c| c.text()) } else { None };
         let bytes = paste_image_fallback(&mut self.grid.borrow_mut().vt, text.as_deref());
         if let Some(bytes) = bytes {
             self.send(&bytes);
@@ -716,11 +718,31 @@ impl TerminalView {
         g.vt.select(step, col, row, x, y, cw, height);
         drop(g);
         if matches!(step, Select::Release) {
-            // Copy on select, as in Herdr.
-            self.copy(cx);
+            // Copy on select, as in Herdr. Say so: there is no other feedback,
+            // and the old herdr showed "copied to clipboard".
+            let chars = self.grid.borrow().vt.selection_text().map(|t| t.chars().count()).unwrap_or(0);
+            if self.copy(cx) && chars > 0 {
+                notify_copied(chars);
+            }
         }
         cx.notify();
     }
+}
+
+/// 圈選複製後的提示。圈選複製沒有別的回饋，不說一聲使用者無從確認。
+/// 走 mods 的 OpenOverlay，和 JS 的 notify() 同一條路，所以會套用 toast 面板的樣式。
+fn notify_copied(chars: usize) {
+    crate::mods::request(crate::mods::Request::OpenOverlay {
+        id: crate::mods::new_overlay_id(),
+        spec: json!({
+            "kind": "toast",
+            "notification": {
+                "title": format!("\u{5df2}\u{8907}\u{88fd} {chars} \u{500b}\u{5b57}\u{5143}"),
+                "level": "success",
+                "timeout": 1200
+            }
+        }),
+    });
 }
 
 fn selection_scroll_lines(y: f32, cell_height: f32, rows: u16) -> isize {
@@ -910,6 +932,28 @@ fn fallback_icon(text: &str, font: &Font, ts: &gpui::TextSystem) -> Option<IconG
         return None;
     }
     icon_glyph(c)
+}
+
+/// Whether the clipboard holds text at all. The query reads no data, so it is
+/// cheap even when the clipboard carries a large image. A failure answers no,
+/// which falls back to handing Ctrl+V to the program — the same thing that
+/// happens when there is no text.
+#[cfg(windows)]
+fn clipboard_has_text() -> bool {
+    // Declared here rather than through windows-sys: pulling in its
+    // Win32_System_DataExchange feature expands a large block of bindings and
+    // made rustc overflow its stack. user32 is already linked.
+    unsafe extern "system" {
+        fn IsClipboardFormatAvailable(format: u32) -> i32;
+    }
+    // CF_UNICODETEXT, a fixed value.
+    const CF_UNICODETEXT: u32 = 13;
+    unsafe { IsClipboardFormatAvailable(CF_UNICODETEXT) != 0 }
+}
+
+#[cfg(not(windows))]
+fn clipboard_has_text() -> bool {
+    true
 }
 
 fn paste_image_fallback(vt: &mut vt::Vt, text: Option<&str>) -> Option<Vec<u8>> {
