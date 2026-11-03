@@ -1,7 +1,7 @@
 // The keybind list (Herdr's prefix+?), grouped, filterable by typing.
 // Reads keys.json through keys(); edit keys.json to change any of them.
 
-import { View, div } from "gpui-kit";
+import { View, div, svg } from "gpui-kit";
 import { v_flex, h_flex, InputState, Input } from "gpui-base";
 import { keys, props, closeOverlay, theme } from "herdr";
 
@@ -24,7 +24,7 @@ function label(action) {
 export default class Help extends View {
   init(_props, cx) {
     this.filter = "";
-    this.input = InputState.new({ placeholder: "Type to filter…" });
+    this.input = InputState.new({ placeholder: "輸入以篩選…" });
     this.input.on("change", (_e, cx) => { this.filter = this.input.value(); cx.notify(); });
     this.input.focus();
     cx.timer.after(600, () => this.input.focus());
@@ -57,8 +57,8 @@ export default class Help extends View {
           .h(22)
           .items_center()
           .justify_between()
-          .child(div().text_size(15).font_semibold().text_color(t.foreground).child("Keybinds"))
-          .child(div().text_size(11).text_color(t.dim).child("Esc")),
+          .child(div().text_size(15).font_semibold().text_color(t.foreground).child("快捷鍵"))
+          .child(div().id("ov-close").size(22).flex_none().flex().items_center().justify_center().rounded(5).cursor_pointer().text_color(t.dim).hover((s) => s.bg(t.hover).text_color(t.foreground)).on_click((_e, cx) => { cx.stop_propagation(); closeOverlay(props().overlay); }).child(svg("mods/pane/close.svg").size(13))),
       )
       .child(Input.new(this.input).h(36).flex_none().px(10).rounded(9).border_1().border_color(t.accent).bg(t.background).text_size(12.8).text_color(t.foreground))
       .child(

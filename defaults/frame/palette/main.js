@@ -18,48 +18,52 @@ const ROW_H = 32;
 const HEAD_H = 26;
 const LIST_H = SHOWN * ROW_H;
 const GROUPS = ["Recent", "Tab", "Pane", "Space", "Layout", "Terminal", "Agent", "Window", "App"];
+// 分組的顯示名：GROUPS 的值是 key，不能動，這裡只管畫出來的字。
+const GROUP_LABEL = { Recent: "最近", Tab: "分頁", Pane: "窗格", Space: "空間", Layout: "版面",
+  Terminal: "終端機", Agent: "代理程式", Window: "視窗", App: "應用程式" };
+const DIR_LABEL = { left: "左", right: "右", up: "上", down: "下" };
 
 // The palette's names for commands: [command, args, group, title, keywords].
 const NAMED = [
-  ["tab.new", {}, "Tab", "New tab", "tab agent new task"],
-  ["mod.open", { name: "picker" }, "Tab", "Go to space or tab…", "switch jump find"],
-  ["tab.rename", {}, "Tab", "Rename tab", "tab"],
-  ["tab.close", {}, "Tab", "Close tab", "tab kill"],
-  ["tab.next", {}, "Tab", "Next tab", "tab"],
-  ["tab.prev", {}, "Tab", "Previous tab", "tab"],
-  ["pane.split", { direction: "right" }, "Pane", "Split right", "vertical"],
-  ["pane.split", { direction: "down" }, "Pane", "Split down", "horizontal"],
-  ["pane.close", {}, "Pane", "Close pane", "kill"],
-  ["pane.zoom", {}, "Pane", "Zoom pane", "maximize fullscreen"],
-  ...["left", "right", "up", "down"].map((d) => ["pane.go", { direction: d }, "Pane", `Focus pane ${d}`, "move go"]),
-  ...["left", "right", "up", "down"].map((d) => ["pane.swap", { direction: d }, "Pane", `Swap pane ${d}`, "move"]),
-  ["space.new", {}, "Space", "New space", "workspace"],
-  ["space.rename", {}, "Space", "Rename space", "workspace"],
-  ["space.close", {}, "Space", "Close space", "workspace kill"],
-  ["space.next", {}, "Space", "Next space", "workspace"],
-  ["space.prev", {}, "Space", "Previous space", "workspace"],
-  ["layout.switch", {}, "Layout", "Next layout", "look switch"],
-  ["layout.reset", {}, "Layout", "Reset layout", "new version default restore herdr's"],
-  ["layout.clone", {}, "Layout", "Duplicate layout", "clone copy customize"],
-  ["mod.clone", {}, "Layout", "Duplicate mod", "clone copy customize"],
-  ["terminal.open", {}, "Terminal", "New terminal", "shell"],
-  ["terminal.copy", {}, "Terminal", "Copy", "clipboard"],
-  ["terminal.paste", {}, "Terminal", "Paste", "clipboard"],
-  ["agent.next", {}, "Agent", "Next agent", ""],
-  ["agent.prev", {}, "Agent", "Previous agent", ""],
-  ["window.minimize", {}, "Window", "Minimize window", ""],
-  ["window.maximize", {}, "Window", "Maximize window", "restore"],
-  ["window.close", {}, "Window", "Close window", "quit"],
-  ["app.settings", {}, "App", "Settings", "preferences options config look font theme sound"],
-  ["app.help", {}, "App", "Keys", "keybindings shortcuts help"],
-  ["app.welcome", {}, "App", "Welcome", "intro start onboarding"],
-  ["app.whats_new", {}, "App", "What's new", "release changes news update"],
-  ["app.reset", {}, "App", "Reset to the default screen", "escape hatch broken restore"],
-  ["app.zoom_in", {}, "App", "Zoom in", "bigger font size"],
-  ["app.zoom_out", {}, "App", "Zoom out", "smaller font size"],
-  ["app.zoom_reset", {}, "App", "Reset zoom", "font size"],
-  ["app.quit", {}, "App", "Quit Herdr", "exit"],
-  ...["graphite", "ink", "moss", "atom-one-dark"].map((n) => ["app.theme", { name: n }, "App", `Theme: ${n.replace(/-/g, " ")}`, "colors look"]),
+  ["tab.new", {}, "Tab", "新增分頁", "tab agent new task"],
+  ["mod.open", { name: "picker" }, "Tab", "前往空間或分頁…", "switch jump find"],
+  ["tab.rename", {}, "Tab", "重新命名分頁", "tab"],
+  ["tab.close", {}, "Tab", "關閉分頁", "tab kill"],
+  ["tab.next", {}, "Tab", "下一個分頁", "tab"],
+  ["tab.prev", {}, "Tab", "上一個分頁", "tab"],
+  ["pane.split", { direction: "right" }, "Pane", "向右分割", "vertical"],
+  ["pane.split", { direction: "down" }, "Pane", "向下分割", "horizontal"],
+  ["pane.close", {}, "Pane", "關閉窗格", "kill"],
+  ["pane.zoom", {}, "Pane", "縮放窗格", "maximize fullscreen"],
+  ...["left", "right", "up", "down"].map((d) => ["pane.go", { direction: d }, "Pane", `聚焦${DIR_LABEL[d]}側窗格`, "move go"]),
+  ...["left", "right", "up", "down"].map((d) => ["pane.swap", { direction: d }, "Pane", `與${DIR_LABEL[d]}側窗格互換`, "move"]),
+  ["space.new", {}, "Space", "新增空間", "workspace"],
+  ["space.rename", {}, "Space", "重新命名空間", "workspace"],
+  ["space.close", {}, "Space", "關閉空間", "workspace kill"],
+  ["space.next", {}, "Space", "下一個空間", "workspace"],
+  ["space.prev", {}, "Space", "上一個空間", "workspace"],
+  ["layout.switch", {}, "Layout", "下一個版面", "look switch"],
+  ["layout.reset", {}, "Layout", "重設版面", "new version default restore herdr's"],
+  ["layout.clone", {}, "Layout", "複製版面", "clone copy customize"],
+  ["mod.clone", {}, "Layout", "複製面板", "clone copy customize"],
+  ["terminal.open", {}, "Terminal", "新增終端機", "shell"],
+  ["terminal.copy", {}, "Terminal", "複製", "clipboard"],
+  ["terminal.paste", {}, "Terminal", "貼上", "clipboard"],
+  ["agent.next", {}, "Agent", "下一個代理程式", ""],
+  ["agent.prev", {}, "Agent", "上一個代理程式", ""],
+  ["window.minimize", {}, "Window", "最小化視窗", ""],
+  ["window.maximize", {}, "Window", "最大化視窗", "restore"],
+  ["window.close", {}, "Window", "關閉視窗", "quit"],
+  ["app.settings", {}, "App", "設定", "preferences options config look font theme sound"],
+  ["app.help", {}, "App", "快捷鍵", "keybindings shortcuts help"],
+  ["app.welcome", {}, "App", "歡迎畫面", "intro start onboarding"],
+  ["app.whats_new", {}, "App", "更新內容", "release changes news update"],
+  ["app.reset", {}, "App", "重設為預設畫面", "escape hatch broken restore"],
+  ["app.zoom_in", {}, "App", "放大", "bigger font size"],
+  ["app.zoom_out", {}, "App", "縮小", "smaller font size"],
+  ["app.zoom_reset", {}, "App", "重設縮放", "font size"],
+  ["app.quit", {}, "App", "結束 Herdr", "exit"],
+  ...["graphite", "ink", "moss", "atom-one-dark"].map((n) => ["app.theme", { name: n }, "App", `主題：${n.replace(/-/g, " ")}`, "colors look"]),
 ];
 
 // Commands that act on something you point at (ids, terminals): not for a list.
@@ -84,8 +88,8 @@ function entries() {
     .filter(([n]) => !(mac && n.startsWith("window.")))
     .map(([name, args, group, title, words]) => ({ name, args, group, title, words }));
   for (const l of layouts()) {
-    const t = { main: "Herdr", terminals: "Terminals", win98: "Herdr 98" }[l] ?? l.charAt(0).toUpperCase() + l.slice(1);
-    list.push({ name: "layout.switch", args: { name: l }, group: "Layout", title: `Layout: ${t}`, words: `look ${l}` });
+    const t = { main: "Herdr", terminals: "終端機", win98: "Herdr 98" }[l] ?? l.charAt(0).toUpperCase() + l.slice(1);
+    list.push({ name: "layout.switch", args: { name: l }, group: "Layout", title: `版面：${t}`, words: `look ${l}` });
   }
   // Anything new in the app shows up too, until it gets a better name here.
   const named = new Set(NAMED.map(([n]) => n));
@@ -131,7 +135,7 @@ function fuzzy(q, text) {
 export default class Palette extends View {
   init(_props, cx) {
     this.query = "";
-    this.input = InputState.new({ placeholder: "Type a command…" });
+    this.input = InputState.new({ placeholder: "輸入指令…" });
     this.input.on("change", (_e, cx) => { this.query = this.input.value(); this.at = 0; cx.notify(); });
     this.input.on("submit", () => this.go(this.rows()[this.at]?.e));
     this.input.focus();
@@ -154,7 +158,7 @@ export default class Palette extends View {
     this.close();
     if (e.name === "mod.clone") {
       openOverlay({ mod: "prompt", kind: "dialog", width: 380, props: {
-        title: "Duplicate mod", hint: "Mod to copy; creates <name>-copy",
+        title: "複製面板", hint: "要複製的面板；會建立 <name>-copy",
         command: { name: "mod.clone", args: {} },
       } });
     } else {
@@ -241,7 +245,7 @@ export default class Palette extends View {
     const list = [];
     rows.forEach((r, i) => {
       const { head, title, row } = tops[i];
-      if (head && visible(title, row)) list.push(place(h_flex(), title, row).px(14).pb(4).items_end().text_size(11).font_semibold().text_color(t.dim).child(r.head));
+      if (head && visible(title, row)) list.push(place(h_flex(), title, row).px(14).pb(4).items_end().text_size(11).font_semibold().text_color(t.dim).child(GROUP_LABEL[r.head] ?? r.head));
       if (!visible(row, row + ROW_H)) return;
       const on = i === this.at;
       const k = keyOf(r.e, bound);
@@ -259,7 +263,7 @@ export default class Palette extends View {
           .hover((s) => s.bg(t.hover))
           .on_click(() => this.go(r.e))
           .child(div().flex_1().min_w(0).child(this.title(t, r.e.title, r.hits, on)))
-          .when(Boolean(this.query), (el) => el.child(div().text_size(11.5).text_color(t.dim).child(r.e.group)))
+          .when(Boolean(this.query), (el) => el.child(div().text_size(11.5).text_color(t.dim).child(GROUP_LABEL[r.e.group] ?? r.e.group)))
           .when(Boolean(k), (el) => el.child(key(k))),
       );
     });
@@ -296,7 +300,7 @@ export default class Palette extends View {
           .bg(t.background)
           .child(svg("frame/palette/command.svg").size(16).text_color(t.dim))
           .child(Input.new(this.input).flex_1().h_full().text_size(12.8).text_color(t.foreground))
-          .child(div().text_size(11).text_color(t.dim).child("Esc")),
+          .child(div().id("ov-close").size(22).flex_none().flex().items_center().justify_center().rounded(5).cursor_pointer().text_color(t.dim).hover((s) => s.bg(t.hover).text_color(t.foreground)).on_click((_e, cx) => { cx.stop_propagation(); closeOverlay(props().overlay); }).child(svg("mods/pane/close.svg").size(13))),
       )
       .child(
         rows.length
@@ -314,7 +318,7 @@ export default class Palette extends View {
                 cx.notify();
               })
               .children(fixed ? list : [v_flex().children(list)])
-          : div().px(16).py(14).text_size(13).text_color(t.dim).child(`Nothing matches "${this.query}". Places are in the picker.`),
+          : div().px(16).py(14).text_size(13).text_color(t.dim).child(`找不到符合「${this.query}」的項目。空間與分頁請用前往選擇器。`),
       );
   }
 }

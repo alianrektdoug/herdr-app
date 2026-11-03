@@ -113,7 +113,7 @@ export default class MachineAdd extends View {
       try {
         why = r.code === 0 ? null : (JSON.parse(r.stdout || r.stderr).error ?? { message: (r.stderr || r.stdout).trim() });
       } catch {
-        why = { message: (r.stderr || r.stdout || "it didn't answer").trim() };
+        why = { message: (r.stderr || r.stdout || "它沒有回應").trim() };
       }
       if (!why) {
         delete this.state[target];
@@ -124,7 +124,7 @@ export default class MachineAdd extends View {
       } else if (["hc_missing", "incompatible", "login_needed", "auth_failed", "host_key"].includes(why.kind) || /password|passphrase|host key|permission denied|login/i.test(why.message ?? "")) {
         this.state[target] = "terminal";
         await this.inTerminal(target);
-      } else this.state[target] = why.message || "it didn't work";
+      } else this.state[target] = why.message || "沒有成功";
       await this.refresh();
       cx.notify();
     });
@@ -152,7 +152,7 @@ export default class MachineAdd extends View {
       .bg(t.blocked + "14")
       .border_1()
       .border_color(t.blocked + "40")
-      .child(div().text_size(12.8).font_semibold().text_color(t.foreground).child(`${mac.name} is a Mac: allow its folders once`))
+      .child(div().text_size(12.8).font_semibold().text_color(t.foreground).child(`${mac.name} 是 Mac：需要先允許存取它的資料夾`))
       .child(
         div()
           .text_size(12.5)
@@ -184,9 +184,9 @@ export default class MachineAdd extends View {
                 this.opened[target] = true;
                 cx.notify();
               })
-              .child(`Open the setting on ${mac.name}`),
+              .child(`在 ${mac.name} 上開啟該設定`),
           )
-          .when(Boolean(this.opened[target]), (el) => el.child(div().text_size(12).text_color(t.dim).child("It's open on the Mac's screen."))),
+          .when(Boolean(this.opened[target]), (el) => el.child(div().text_size(12).text_color(t.dim).child("已在那台 Mac 的畫面上開啟。"))),
       );
   }
 
@@ -198,7 +198,7 @@ export default class MachineAdd extends View {
       address = r?.code === 0 ? JSON.parse(r.stdout).address : null;
     } catch {}
     if (!address) {
-      this.state[target] = "Couldn't open a terminal for it. Run `hc machine add " + target + "` in one.";
+      this.state[target] = "無法為它開啟終端機。請在終端機中執行 `hc machine add " + target + "`。";
       return;
     }
     openOverlay({
@@ -237,7 +237,7 @@ export default class MachineAdd extends View {
       .text_size(12.5)
       .text_color(t.muted)
       .child(svg(I("server")).size(14))
-      .child(div().flex_1().child(`Adding ${props().target}: answer it here`))
+      .child(div().flex_1().child(`正在新增 ${props().target}：請在這裡回答`))
       .child(
         div()
           .id("ma-bar-close")
@@ -259,11 +259,11 @@ export default class MachineAdd extends View {
     const st = this.state[target];
     const done = this.isAdded(target);
     const right = done
-      ? h_flex().gap(5).items_center().text_size(12).text_color(t.ansi2).child(svg(I("circle-check")).size(13)).child("Added")
+      ? h_flex().gap(5).items_center().text_size(12).text_color(t.ansi2).child(svg(I("circle-check")).size(13)).child("已新增")
       : st === "adding"
-        ? h_flex().gap(6).items_center().text_size(12).text_color(t.muted).child(svg(I("spinner")).size(12).text_color(t.working).spin(900)).child("Connecting")
+        ? h_flex().gap(6).items_center().text_size(12).text_color(t.muted).child(svg(I("spinner")).size(12).text_color(t.working).spin(900)).child("正在連線")
         : st === "terminal"
-          ? div().text_size(12).text_color(t.blocked).child("Waiting in its terminal")
+          ? div().text_size(12).text_color(t.blocked).child("正在它的終端機中等待")
           : div()
               .id(`ma-add-${target}`)
               .px(10)
@@ -279,7 +279,7 @@ export default class MachineAdd extends View {
               .cursor_pointer()
               .hover((s) => s.bg(t.hover))
               .on_click((_e, cx) => this.add(target, cx))
-              .child("Add");
+              .child("新增");
     const idle = !done && !st;
     return v_flex()
       .flex_none()
@@ -315,16 +315,16 @@ export default class MachineAdd extends View {
       .p(18)
       .bg(t.popover)
       .text_color(t.foreground)
-      .child(h_flex().items_center().child(div().flex_1().text_size(15).font_semibold().child("Add a machine")).child(div().text_size(11).text_color(t.dim).child("Esc")))
+      .child(h_flex().items_center().child(div().flex_1().text_size(15).font_semibold().child("新增機器")).child(div().id("ov-close").size(22).flex_none().flex().items_center().justify_center().rounded(5).cursor_pointer().text_color(t.dim).hover((s) => s.bg(t.hover).text_color(t.foreground)).on_click((_e, cx) => { cx.stop_propagation(); closeOverlay(props().overlay); }).child(svg("mods/pane/close.svg").size(13))))
       .child(
         div()
           .pt(6)
           .text_size(12.8)
           .line_height("19px")
           .text_color(t.muted)
-          .child("A VPS, a Mac mini, a box at home: Herdr reaches it over ssh, and agents there keep running while your laptop sleeps."),
+          .child("VPS、Mac mini、家裡的主機：Herdr 透過 ssh 連上它，上面的代理程式在你的筆電睡眠時仍會繼續執行。"),
       )
-      .child(div().pt(16).pb(6).text_size(11.5).font_medium().text_color(t.dim).child(hosts.length ? "From your ssh config" : "Your ssh config lists no hosts"))
+      .child(div().pt(16).pb(6).text_size(11.5).font_medium().text_color(t.dim).child(hosts.length ? "來自你的 ssh 設定" : "你的 ssh 設定中沒有主機"))
       .child(
         v_flex()
           .id("ma-hosts")
@@ -334,11 +334,11 @@ export default class MachineAdd extends View {
           .overflow_y_scroll()
           .children(
             this.hosts === null
-              ? [div().px(10).py(8).text_size(12.5).text_color(t.dim).child("Reading ~/.ssh/config…")]
+              ? [div().px(10).py(8).text_size(12.5).text_color(t.dim).child("正在讀取 ~/.ssh/config…")]
               : hosts.map((h) => this.row(t, h.alias, h.alias, [h.user, h.hostname].filter(Boolean).join("@") || (h.aliases.length ? `also ${h.aliases.join(", ")}` : ""))),
           ),
       )
-      .child(div().pt(14).pb(6).text_size(11.5).font_medium().text_color(t.dim).child("Or type how ssh reaches it"))
+      .child(div().pt(14).pb(6).text_size(11.5).font_medium().text_color(t.dim).child("或直接輸入 ssh 連線方式"))
       .child(
         h_flex()
           .gap(8)
@@ -371,7 +371,7 @@ export default class MachineAdd extends View {
               .when(!this.typed.trim(), (el) => el.opacity(0.4))
               .cursor_pointer()
               .on_click((_e, cx) => this.add(this.typed, cx))
-              .child("Add"),
+              .child("新增"),
           ),
       )
       .when(Boolean(this.typed.trim() && this.state[this.typed.trim()]), (el) => el.child(div().pt(6).text_size(12).text_color(t.blocked).child(String(this.state[this.typed.trim()]))));

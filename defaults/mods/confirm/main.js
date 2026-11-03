@@ -2,7 +2,7 @@
 // dialog with props { title, detail, command: { name, args } }.
 // Enter confirms (runs the command), Esc cancels.
 
-import { View, div } from "gpui-kit";
+import { View, div, svg } from "gpui-kit";
 import { v_flex, h_flex } from "gpui-base";
 import { run, props, closeOverlay, theme } from "herdr";
 
@@ -38,15 +38,15 @@ export default class Confirm extends View {
       .gap(12)
       .bg(t.popover)
       .text_size(13)
-      .child(h_flex().items_center().child(div().flex_1().text_size(15).font_semibold().text_color(t.foreground).child(p.title ?? "Are you sure?")).child(div().text_size(11).text_color(t.dim).child("Esc")))
+      .child(h_flex().items_center().child(div().flex_1().text_size(15).font_semibold().text_color(t.foreground).child(p.title ?? "確定嗎？")).child(div().id("ov-close").size(22).flex_none().flex().items_center().justify_center().rounded(5).cursor_pointer().text_color(t.dim).hover((s) => s.bg(t.hover).text_color(t.foreground)).on_click((_e, cx) => { cx.stop_propagation(); closeOverlay(props().overlay); }).child(svg("mods/pane/close.svg").size(13))))
       .child(div().flex_1().min_h(0).overflow_y_scrollbar().text_color(t.muted).child(p.detail ?? ""))
       .child(
         h_flex()
           .justify_end()
           .gap(8)
           .text_size(12)
-          .child(button("no", "Cancel", t.raised, t.foreground, () => closeOverlay(props().overlay)))
-          .child(button("yes", "Confirm", t.solid, t.solid_foreground, () => this.yes())),
+          .child(button("no", "取消", t.raised, t.foreground, () => closeOverlay(props().overlay)))
+          .child(button("yes", "確定", t.solid, t.solid_foreground, () => this.yes())),
       );
   }
 }
