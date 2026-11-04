@@ -98,6 +98,10 @@ static CHECKED: Mutex<Option<u64>> = Mutex::new(None);
 static WAKE: (Mutex<bool>, Condvar) = (Mutex::new(false), Condvar::new());
 /// The checker runs (a release, or pointed at a test server), and is looking right now.
 static RUNNING: AtomicBool = AtomicBool::new(false);
+/// zh-tw: settings.json's `updates`. Off means the hourly check is skipped;
+/// "check now" still goes through, so the person is never stuck on an old
+/// build without a way to look.
+static AUTO: AtomicBool = AtomicBool::new(false);
 static CHECKING: AtomicBool = AtomicBool::new(false);
 
 pub fn core() -> CoreInfo {
@@ -128,7 +132,7 @@ fn checks_core() -> bool {
 /// For the settings screen: both programs, what's waiting, when we last looked.
 pub fn status() -> serde_json::Value {
     serde_json::json!({
-        "app": { "version": env!("CARGO_PKG_VERSION"), "ready": ready(), "updates": checks_app().is_some() },
+        "app": { "version": env!("CARGO_PKG_VERSION"), "ready": ready(), "updates": checks_app().is_some(), "auto": auto_updates() },
         "notes": crate::update_notes::notes(ready().as_deref()),
         "core": core(),
         "checked": *CHECKED.lock().unwrap(),
@@ -145,10 +149,27 @@ pub fn check_now() {
     WAKE.1.notify_all();
 }
 
-fn sleep(d: Duration) {
+/// zh-tw: the person's `updates`, applied at startup and whenever
+/// settings.json changes. Turning it on looks straight away.
+pub fn set_updates(on: bool) {
+    // Only nudge a checker already running: at startup this runs before
+    // start() spawns it, and its own 10s delay keeps the launch quiet.
+    if AUTO.swap(on, Ordering::Relaxed) != on && on && RUNNING.load(Ordering::Relaxed) {
+        check_now();
+    }
+}
+
+pub fn auto_updates() -> bool {
+    AUTO.load(Ordering::Relaxed)
+}
+
+/// Waits, and says whether "check now" woke it (rather than the timer).
+fn sleep(d: Duration) -> bool {
     let woken = WAKE.0.lock().unwrap();
     let (mut woken, _) = WAKE.1.wait_timeout_while(woken, d, |w| !*w).unwrap();
+    let asked = *woken;
     *woken = false;
+    asked
 }
 
 /// Starts checking in the background: the app if it's an installed release, the core too.
@@ -162,8 +183,15 @@ pub fn start() {
     RUNNING.store(true, Ordering::Relaxed);
     CHECKING.store(true, Ordering::Relaxed);
     std::thread::spawn(move || {
-        sleep(Duration::from_secs(10));
+        let mut asked = sleep(Duration::from_secs(10));
         loop {
+            // zh-tw: with automatic checks off, only an explicit "check now"
+            // reaches the network.
+            if !asked && !AUTO.load(Ordering::Relaxed) {
+                CHECKING.store(false, Ordering::Relaxed);
+                asked = sleep(EVERY);
+                continue;
+            }
             CHECKING.store(true, Ordering::Relaxed);
             let mut wait = EVERY;
             let mut succeeded = true;
@@ -190,7 +218,7 @@ pub fn start() {
             let now = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.as_secs()).unwrap_or(0);
             *CHECKED.lock().unwrap() = checked_at(succeeded, now);
             CHECKING.store(false, Ordering::Relaxed);
-            sleep(wait);
+            asked = sleep(wait);
         }
     });
 }

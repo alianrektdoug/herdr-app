@@ -855,6 +855,7 @@ impl AppWindow {
         if s_time.is_none() || s_time != self.watched.settings {
             let loaded = settings::load_person();
             crate::telemetry::set_setting(settings::telemetry_setting(&loaded));
+            crate::update::set_updates(settings::updates_setting(&loaded));
             match loaded {
                 Ok(p) => {
                     self.person = p;

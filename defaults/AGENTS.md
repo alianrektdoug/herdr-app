@@ -698,7 +698,12 @@ What's about the user, never a look:
   terminals, which layouts, shipped mods and commands were used. Never
   terminal content, names of files, folders, spaces or the person's own
   mods; nothing from herdr-core. `DO_NOT_TRACK=1` or `HERDR_TELEMETRY=0`
-  turns it off for one run. A build from source never sends.
+  turns it off for one run. This fork never sends at all, whoever built it,
+  and starts off when the key is absent.
+- `updates`: `true` looks for a new Herdr and herdr-core once an hour (off
+  when absent, so a build made here is never replaced by an official one).
+  Settings -> Updates has the switch, and "check now" there works whether
+  it is on or off.
 
 ## Programs: `programs.json`
 

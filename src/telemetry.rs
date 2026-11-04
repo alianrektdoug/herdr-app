@@ -97,12 +97,13 @@ fn read_env_off() -> Option<&'static str> {
     CI.iter().any(|k| set(k).is_some()).then_some("CI")
 }
 
-/// Where reports go, if this build sends at all.
+/// Where reports go. zh-tw: nowhere. Upstream sends from any build made by
+/// `scripts/package` (it sets HERDR_APP_RELEASE=1), which includes the ones
+/// built from this fork, so "only official builds send" was never true here.
+/// Collecting still works, so Settings -> Privacy and `telemetry()` keep
+/// showing exactly what upstream would have sent; nothing leaves the machine.
 fn endpoint() -> Option<String> {
-    match std::env::var("HERDR_TELEMETRY_URL").ok().filter(|u| !u.is_empty()) {
-        Some(url) => Some(url),
-        None => option_env!("HERDR_APP_RELEASE").map(|_| ENDPOINT.to_owned()),
-    }
+    None
 }
 
 pub fn collecting() -> bool {

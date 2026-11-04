@@ -692,6 +692,9 @@ export default class Settings extends View {
 
   updates(t) {
     const u = updates();
+    // zh-tw: 排程檢查的開關（settings.json 的 `updates`）。
+    // 沒有這個鍵就是關的，所以自編的版本不會被官方版蓋掉。
+    const auto = Boolean(u.app.auto);
     const at = (secs) => {
       const d = new Date(secs * 1000);
       return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
@@ -743,7 +746,31 @@ export default class Settings extends View {
       .child(div().h(18))
       .child(this.heading(t, "herdr-core"))
       .child(this.row(t, `herdr-core ${c.version ?? ""}`, core[0], core[1] ?? div()))
-      .child(div().pt(12).text_size(12.5).line_height("18px").text_color(t.dim).child("Herdr 每小時檢查一次並在角落提示。你的終端機由 herdr-core 執行，所以更新時不會中斷。"));
+      .when(u.checks, (el) =>
+        el
+          .child(div().h(18))
+          .child(this.heading(t, "自動更新"))
+          .child(
+            this.row(
+              t,
+              "自動檢查更新",
+              auto
+                ? "每小時檢查一次，找到新版就下載並在角落提示。"
+                : "已關閉：不會自己連線，也不會把你自己編的版本換成官方版。上面的「立即檢查」不受影響。",
+              this.toggle(t, "st-auto-update", auto, (_e, cx) =>
+                this.change((p) => {
+                  if (auto) delete p.updates;
+                  else p.updates = true;
+                }, cx),
+              ),
+            ),
+          ),
+      )
+      .child(div().pt(12).text_size(12.5).line_height("18px").text_color(t.dim).child(
+        auto
+          ? "Herdr 每小時檢查一次並在角落提示。你的終端機由 herdr-core 執行，所以更新時不會中斷。"
+          : "自動檢查關閉時，Herdr 不會自己連線。要更新時按「立即檢查」。你的終端機由 herdr-core 執行，所以更新時不會中斷。",
+      ));
   }
 
 
