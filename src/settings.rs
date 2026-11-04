@@ -383,7 +383,7 @@ pub struct Person {
     /// The panels' font (their sizes follow zoom).
     #[serde(skip_serializing_if = "Option::is_none")]
     pub ui_font: Option<String>,
-    /// Anonymous usage data (telemetry.rs). On unless set to false.
+    /// Anonymous usage data (telemetry.rs). zh-tw: off unless set to true.
     #[serde(skip_serializing_if = "is_true")]
     pub telemetry: bool,
     /// Allow terminal programs (including remote ones) to copy text locally.
@@ -449,7 +449,9 @@ impl Default for Person {
             font_size: None,
             font_ligatures: false,
             ui_font: None,
-            telemetry: true,
+            // zh-tw: upstream defaults this to true. Nothing should leave the
+            // machine unless the person asks for it, so it starts off here.
+            telemetry: false,
             clipboard_write: true,
             minimum_contrast: 1.0,
             option_as_alt: OptionAsAlt::Auto,
@@ -667,13 +669,16 @@ pub fn load_person() -> Result<Person, String> {
 }
 
 /// The value of settings.json's own `telemetry`, read even when the file has
-/// another problem: an explicit `false` always counts.
+/// another problem: an explicit `false` always counts. zh-tw: so does a
+/// missing one.
 pub fn telemetry_setting(person: &Result<Person, String>) -> bool {
     match person {
         Ok(p) => p.telemetry,
         Err(_) => {
             let raw = std::fs::read_to_string(path()).ok().and_then(|t| serde_json::from_str::<serde_json::Value>(&t).ok());
-            raw.and_then(|v| v.get("telemetry").and_then(serde_json::Value::as_bool)).unwrap_or(true)
+            // zh-tw: upstream falls back to on; an unreadable settings file
+            // must not turn reporting back on.
+            raw.and_then(|v| v.get("telemetry").and_then(serde_json::Value::as_bool)).unwrap_or(false)
         }
     }
 }
