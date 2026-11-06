@@ -515,7 +515,8 @@ impl TerminalView {
         }
     }
 
-    /// Ctrl+V: a remote image, clipboard text on Windows, or the key itself.
+    /// Ctrl+V: a remote image, a local one as a file on Windows, clipboard
+    /// text, or the key itself.
     pub fn paste_image(&mut self, cx: &mut Context<Self>) {
         if self.send_image(cx) {
             return;
@@ -523,10 +524,37 @@ impl TerminalView {
         // Only the text is wanted here, and reading the clipboard pulls in every
         // format it holds — tens of MB of bitmap right after a screenshot. Ask first.
         let text = if cfg!(windows) && clipboard_has_text() { cx.read_from_clipboard().and_then(|c| c.text()) } else { None };
+        if text.is_none() && self.local_image_as_file(cx) {
+            return;
+        }
         let bytes = paste_image_fallback(&mut self.grid.borrow_mut().vt, text.as_deref());
         if let Some(bytes) = bytes {
             self.send(&bytes);
         }
+    }
+
+    /// zh-tw: Windows hands a screenshot over as CF_DIB — 8 MB of raw bitmap for
+    /// a 1920x1080 screen. Upstream leaves a local program to read that itself
+    /// ("nothing to do" in `send_image`), but decoding and re-encoding it is slow
+    /// where the program does it in a scripting runtime: measured ~19 s for Claude
+    /// Code to take one screenshot that way, against under 3 s for the same image
+    /// dropped on the terminal as a file, and under 3 s in the old herdr TUI, which
+    /// bridges clipboard images to a file itself (`clipboard_images.rs`).
+    ///
+    /// So do what a drop does: write the image once, paste its path. Only on
+    /// Windows, and only when the clipboard holds no text, so Ctrl+V over copied
+    /// text still pastes text.
+    fn local_image_as_file(&mut self, cx: &mut Context<Self>) -> bool {
+        if !cfg!(windows) || self.address.contains('/') {
+            return false;
+        }
+        let Some(item) = cx.read_from_clipboard() else { return false };
+        if !item.entries().iter().any(|e| matches!(e, ClipboardEntry::Image(_))) {
+            return false;
+        }
+        let Some(path) = image_file(&item) else { return false };
+        self.dropped(vec![path], cx);
+        true
     }
 
     /// An agent on another machine reads that machine's clipboard, so this
@@ -788,8 +816,31 @@ fn copied_files(item: &ClipboardItem) -> Option<Vec<std::path::PathBuf>> {
     })
 }
 
+/// zh-tw: upstream only wrote these for a terminal on another machine, where
+/// they are rare. Pasting locally writes one every time, so clear yesterday's
+/// before adding another. Bounded, and every failure is ignored: a leftover
+/// file is not worth failing a paste over.
+fn sweep_old_pastes() {
+    let Some(cutoff) = std::time::SystemTime::now().checked_sub(std::time::Duration::from_secs(24 * 60 * 60)) else {
+        return;
+    };
+    let Ok(dir) = std::fs::read_dir(std::env::temp_dir()) else { return };
+    for entry in dir.flatten().take(4000) {
+        let name = entry.file_name();
+        let Some(name) = name.to_str() else { continue };
+        if !name.starts_with("herdr-paste-") {
+            continue;
+        }
+        let stale = entry.metadata().ok().and_then(|m| m.modified().ok()).is_some_and(|t| t < cutoff);
+        if stale {
+            let _ = std::fs::remove_file(entry.path());
+        }
+    }
+}
+
 /// The clipboard's image saved to a file of its own, for its path to be pasted.
 fn image_file(item: &ClipboardItem) -> Option<std::path::PathBuf> {
+    sweep_old_pastes();
     let image = item.entries().iter().find_map(|e| match e {
         ClipboardEntry::Image(i) => Some(i),
         _ => None,
