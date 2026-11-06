@@ -548,6 +548,14 @@ impl TerminalView {
         if !cfg!(windows) || self.address.contains('/') {
             return false;
         }
+        // The ready-made PNG first, without asking gpui: its read pulls in
+        // every format the clipboard holds, the 8 MB bitmap included.
+        if let Some(bytes) = clipboard_png() {
+            if let Some(path) = write_paste_file(&bytes, "png") {
+                self.dropped(vec![path], cx);
+                return true;
+            }
+        }
         let Some(item) = cx.read_from_clipboard() else { return false };
         if !item.entries().iter().any(|e| matches!(e, ClipboardEntry::Image(_))) {
             return false;
@@ -853,10 +861,87 @@ fn image_file(item: &ClipboardItem) -> Option<std::path::PathBuf> {
         ImageFormat::Svg => "svg",
         _ => "png",
     };
+    write_paste_file(&bytes, ext)
+}
+
+/// zh-tw: one pasted image written where a drop would find it.
+fn write_paste_file(bytes: &[u8], ext: &str) -> Option<std::path::PathBuf> {
+    sweep_old_pastes();
     let stamp = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).ok()?.as_nanos();
     let path = std::env::temp_dir().join(format!("herdr-paste-{stamp}.{ext}"));
     std::fs::write(&path, bytes).ok()?;
     Some(path)
+}
+
+/// zh-tw: Windows screenshot tools put a ready-made PNG on the clipboard under
+/// the registered "PNG" format, beside the raw bitmap — 8 MB of it for a
+/// 1920x1080 screen. gpui's `read_from_clipboard` takes every format, so it
+/// makes Windows render that bitmap as well: measured ~21 s the first time a
+/// screenshot is pasted, and fast afterwards only because Windows keeps what it
+/// rendered. The old herdr TUI asks for the PNG on its own
+/// (`src/platform/windows.rs`, `read_clipboard_image`) and its first paste takes
+/// 3 s. Ask the same way.
+///
+/// Declared here rather than through windows-sys for the reason given in
+/// `clipboard_has_text`: its Win32_System_DataExchange feature made rustc
+/// overflow its stack. user32 and kernel32 are already linked.
+#[cfg(windows)]
+fn clipboard_png() -> Option<Vec<u8>> {
+    /// Well past any screenshot; a guard against a bad handle, not a policy.
+    const MAX: usize = 64 * 1024 * 1024;
+    unsafe extern "system" {
+        fn RegisterClipboardFormatW(name: *const u16) -> u32;
+        fn IsClipboardFormatAvailable(format: u32) -> i32;
+        fn OpenClipboard(owner: *mut core::ffi::c_void) -> i32;
+        fn CloseClipboard() -> i32;
+        fn GetClipboardData(format: u32) -> *mut core::ffi::c_void;
+        fn GlobalLock(handle: *mut core::ffi::c_void) -> *mut core::ffi::c_void;
+        fn GlobalUnlock(handle: *mut core::ffi::c_void) -> i32;
+        fn GlobalSize(handle: *mut core::ffi::c_void) -> usize;
+    }
+
+    static PNG_FORMAT: std::sync::OnceLock<u32> = std::sync::OnceLock::new();
+    let format = *PNG_FORMAT.get_or_init(|| {
+        let name: Vec<u16> = "PNG\0".encode_utf16().collect();
+        unsafe { RegisterClipboardFormatW(name.as_ptr()) }
+    });
+    if format == 0 || unsafe { IsClipboardFormatAvailable(format) } == 0 {
+        return None;
+    }
+    // Another program can hold the clipboard for a moment; the TUI waits the same.
+    for attempt in 0..10 {
+        if unsafe { OpenClipboard(std::ptr::null_mut()) } != 0 {
+            let bytes = unsafe {
+                let handle = GetClipboardData(format);
+                if handle.is_null() {
+                    None
+                } else {
+                    let size = GlobalSize(handle);
+                    let ptr = GlobalLock(handle);
+                    let out = if ptr.is_null() || size == 0 || size > MAX {
+                        None
+                    } else {
+                        Some(std::slice::from_raw_parts(ptr as *const u8, size).to_vec())
+                    };
+                    if !ptr.is_null() {
+                        GlobalUnlock(handle);
+                    }
+                    out
+                }
+            };
+            unsafe { CloseClipboard() };
+            return bytes;
+        }
+        if attempt < 9 {
+            std::thread::sleep(std::time::Duration::from_millis(5));
+        }
+    }
+    None
+}
+
+#[cfg(not(windows))]
+fn clipboard_png() -> Option<Vec<u8>> {
+    None
 }
 
 fn paste_image_bytes(format: ImageFormat, bytes: &[u8]) -> Option<(ImageFormat, std::borrow::Cow<'_, [u8]>)> {
